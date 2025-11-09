@@ -1,0 +1,68 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+contract UnburnableToken {
+    // Storage variables
+    mapping(address => uint256) public balances;
+    uint256 public totalSupply;
+    uint256 public totalClaimed;
+
+    // Track claimed addresses
+    mapping(address => bool) public hasClaimed;
+
+    // Custom errors
+    error TokensClaimed();
+    error AllTokensClaimed();
+    error UnsafeTransfer(address to);
+
+    // Constructor: 100 million tokens
+    constructor() {
+        totalSupply = 100_000_000;
+        totalClaimed = 0;
+    }
+
+    /**
+     * @dev Claim 1000 tokens once per address
+     */
+    function claim() public {
+        if (totalClaimed >= totalSupply) {
+            revert AllTokensClaimed();
+        }
+        if (hasClaimed[msg.sender]) {
+            revert TokensClaimed();
+        }
+
+        uint256 claimAmount = 1000;
+
+        // Update state
+        hasClaimed[msg.sender] = true;
+        balances[msg.sender] += claimAmount;
+        totalClaimed += claimAmount;
+    }
+
+    /**
+     * @dev Transfer tokens safely
+     * @param _to Recipient address
+     * @param _amount Amount to transfer
+     */
+    function safeTransfer(address _to, uint256 _amount) public {
+        // 1. Not zero address
+        if (_to == address(0)) {
+            revert UnsafeTransfer(_to);
+        }
+
+        // 2. Recipient must have > 0 ETH on Base Sepolia (anti-burn)
+        if (_to.balance == 0) {
+            revert UnsafeTransfer(_to);
+        }
+
+        // 3. Sender has enough tokens
+        if (balances[msg.sender] < _amount) {
+            revert("Insufficient balance");
+        }
+
+        // 4. Perform transfer
+        balances[msg.sender] -= _amount;
+        balances[_to] += _amount;
+    }
+}

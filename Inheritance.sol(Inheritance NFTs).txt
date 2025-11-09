@@ -1,0 +1,107 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+/**
+ * @title Employee
+ * @dev Abstract contract for employees
+ */
+abstract contract Employee {
+    uint public idNumber;
+    uint public managerId;
+
+    constructor(uint _idNumber, uint _managerId) {
+        idNumber = _idNumber;
+        managerId = _managerId;
+    }
+
+    // Marked as view because derived contracts do not modify state
+    function getAnnualCost() public view virtual returns (uint);
+}
+
+/**
+ * @title Salaried
+ * @dev Employee with a fixed annual salary
+ */
+contract Salaried is Employee {
+    uint public annualSalary;
+
+    constructor(uint _idNumber, uint _managerId, uint _annualSalary)
+        Employee(_idNumber, _managerId)
+    {
+        annualSalary = _annualSalary;
+    }
+
+    function getAnnualCost() public view override returns (uint) {
+        return annualSalary;
+    }
+}
+
+/**
+ * @title Hourly
+ * @dev Employee paid by the hour
+ */
+contract Hourly is Employee {
+    uint public hourlyRate;
+
+    constructor(uint _idNumber, uint _managerId, uint _hourlyRate)
+        Employee(_idNumber, _managerId)
+    {
+        hourlyRate = _hourlyRate;
+    }
+
+    function getAnnualCost() public view override returns (uint) {
+        return hourlyRate * 2080; // 2080 hours/year
+    }
+}
+
+/**
+ * @title Manager
+ * @dev Stores report IDs; minimal access control
+ */
+contract Manager {
+    uint[] public reportIds;
+
+    function addReport(uint _id) public {
+        reportIds.push(_id);
+    }
+
+    function resetReports() public {
+        delete reportIds;
+    }
+}
+
+/**
+ * @title Salesperson
+ * @dev Hourly employee
+ */
+contract Salesperson is Hourly {
+    constructor(uint _idNumber, uint _managerId, uint _hourlyRate)
+        Hourly(_idNumber, _managerId, _hourlyRate)
+    {}
+}
+
+/**
+ * @title EngineeringManager
+ * @dev Salaried employee + Manager
+ */
+contract EngineeringManager is Salaried, Manager {
+    constructor(uint _idNumber, uint _managerId, uint _annualSalary)
+        Salaried(_idNumber, _managerId, _annualSalary)
+    {}
+}
+
+/**
+ * @title InheritanceSubmission
+ * @dev Stores references to Salesperson and EngineeringManager
+ */
+contract InheritanceSubmission {
+    address public salesPerson;
+    address public engineeringManager;
+
+    constructor(address _salesPerson, address _engineeringManager) {
+        require(_salesPerson != address(0), "Invalid salesPerson address");
+        require(_engineeringManager != address(0), "Invalid engineeringManager address");
+        salesPerson = _salesPerson;
+        engineeringManager = _engineeringManager;
+    }
+}
